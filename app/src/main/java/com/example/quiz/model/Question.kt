@@ -9,6 +9,6 @@ data class Question(
     val answerC: String,
     val answerD: String,
     val correctAnswer: String,
-    val isImageInter: Int,
+    val isImageQuestion: Boolean,
     val categoryId: Int
 )

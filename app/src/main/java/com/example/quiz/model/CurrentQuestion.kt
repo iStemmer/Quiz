@@ -4,6 +4,6 @@ import com.example.quiz.common.Common
 
 class CurrentQuestion(
     val questionIndex: Int,
-    val type: Common.Companion.ANSWER_TYPE
+    var type: Common.ANSWER_TYPE
 ) {
 }
