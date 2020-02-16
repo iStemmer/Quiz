@@ -14,6 +14,11 @@ object Common {
 
     var selected_values: MutableList<String> = ArrayList()
 
+    var timer = 0
+    var right_answer_count = 0
+    var wrong_answer_count = 0
+    var no_answer_count = 0
+    var data_question = StringBuilder()
 
     var selectedCategory: Category? = null
 

@@ -6,10 +6,12 @@ import android.view.Gravity
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import android.widget.TextView
 import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.core.view.GravityCompat
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.recyclerview.widget.GridLayoutManager
@@ -30,6 +32,8 @@ class QuestionActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
     lateinit var countDownTimer: CountDownTimer
     var timePlay = Common.TOTAL_TIME
     lateinit var adapter: GridAnswerAdapter
+
+    lateinit var txt_wrong_answer: TextView
 
     private lateinit var appBarConfiguration: AppBarConfiguration
 
@@ -78,7 +82,7 @@ class QuestionActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
                 val SCROLLING_LEFT = 1;
                 val SCROLLING_UNDETERMINED = 2
 
-                val currentScrollDirection = SCROLLING_UNDETERMINED
+                var currentScrollDirection = SCROLLING_UNDETERMINED
 
                 private val isScrollDirectionUndetermined: Boolean
                     get() = currentScrollDirection == SCROLLING_UNDETERMINED
@@ -89,20 +93,68 @@ class QuestionActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
                 private val isScrollDirectionLeft: Boolean
                     get() = currentScrollDirection == SCROLLING_LEFT
 
+                private fun setScrollingDirection(positionOffset: Float) {
+                    if (1 - positionOffset >= 0.5) {
+                        this.currentScrollDirection = SCROLLING_RIGHT
+                    } else if (1 - positionOffset <= 0.5) this.currentScrollDirection = SCROLLING_LEFT
+                }
+
                 override fun onPageScrollStateChanged(state: Int) {
+                    if (state == ViewPager.SCROLL_STATE_IDLE) {
+                        this.currentScrollDirection = SCROLLING_UNDETERMINED
+                    }
 
                 }
 
                 override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {
-
+                    if (isScrollDirectionUndetermined) {
+                        setScrollingDirection(positionOffset)
+                    }
                 }
 
                 override fun onPageSelected(position: Int) {
-                }
+                    val questionFragment: QuestionFragment
+                    var pos = 0
+                    if (position > 0) {
+                        if (isScrollDirectionRight) {
+                            questionFragment = Common.fragmentList[position - 1]
+                            pos = position - 1
+                        } else if (isScrollDirectionLeft) {
+                            questionFragment = Common.fragmentList[position + 1]
+                            pos = position + 1
+                        } else {
+                            questionFragment = Common.fragmentList[position]
+                        }
+                    } else {
+                        questionFragment = Common.fragmentList[0]
+                        pos = 0
+                    }
 
+                    if (Common.fragmentList[position].activity == Common.ANSWER_TYPE.NO_ANSWER) {
+                        val question_state = questionFragment.selectedAnswer();
+                        Common.answerSheetList[position] = question_state
+                        adapter.notifyDataSetChanged()
+
+                        countCorrectAnswer()
+                    }
+                }
             })
         }
 
+    }
+
+    private fun countCorrectAnswer() {
+        Common.right_answer_count = 0
+        Common.wrong_answer_count = 0
+        for (item in Common.answerSheetList) {
+            if (item.type == Common.ANSWER_TYPE.RIGHT_ANSWER) {
+                Common.right_answer_count++
+            } else if(item.type == Common.ANSWER_TYPE.WRONG_ANSWER) {
+                Common.wrong_answer_count ++
+            } else {
+                Common.no_answer_count ++
+            }
+        }
     }
 
     private fun genFragmentList() {
@@ -153,6 +205,14 @@ class QuestionActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
         }
     }
 
+    override fun onPrepareOptionsMenu(menu: Menu?): Boolean {
+        val item = menu!!.findItem(R.id.menu_wrong_answer)
+        val layout = item.actionView as ConstraintLayout
+        txt_wrong_answer = layout.findViewById(R.id.txt_wrong_answer) as TextView
+        txt_wrong_answer.text = "0"
+        return true
+    }
+
     private fun genQuestion() {
         Common.questionList = DbHelper.getQuestionByCategory(Common.selectedCategory!!.id)
         if (Common.questionList.size == 0) {
@@ -179,8 +239,4 @@ class QuestionActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
-//    override fun onSupportNavigateUp(): Boolean {
-////        val navController = findNavController(R.id.nav_host_fragment)
-////        return navController.navigateUp(appBarConfiguration) || super.onSupportNavigateUp()
-//    }
 }
